@@ -23,6 +23,8 @@ body{
     overflow-x:hidden;
     height:650vh;
     font-family:Arial, Helvetica, sans-serif;
+
+    touch-action:auto;
 }
 
 canvas{
@@ -106,14 +108,35 @@ canvas{
     background:rgba(255,255,255,0.12);
 }
 
+
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+    .title{
+        font-size:11vw;
+        letter-spacing:6px;
+    }
+
+    .subtitle{
+        font-size:10px;
+        bottom:30px;
+    }
+
+    .launchButton{
+        padding:14px 24px;
+        font-size:10px;
+    }
+
+}
+
 </style>
 </head>
 
 <body>
 
 
-
-<!-- SECTION 1 -->
 
 <section class="section">
 
@@ -129,8 +152,6 @@ canvas{
 
 
 
-<!-- SECTION 2 -->
-
 <section class="section">
 
     <div class="title">
@@ -138,7 +159,7 @@ canvas{
     </div>
 
     <div class="subtitle">
-        KEEP SCROLLING
+        TOUCH • DRAG • ROTATE
     </div>
 
 </section>
@@ -163,32 +184,18 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164/build/three.mod
 
 const SETTINGS = {
 
-    /* PARTICLES */
-
     particleCount: 22000,
     particleSize: 0.3,
     particleOpacity: 0.95,
     particleColor: 0xffffff,
 
-
-    /* BACKGROUND */
-
     backgroundColor: 0x000000,
-
-
-    /* MOUSE */
 
     mouseRadius: 5,
     mouseForce: 1.2,
 
-
-    /* CLICK WAVES */
-
     clickWaveForce: 1,
     clickWaveSpeed: 1.5,
-
-
-    /* GALAXY */
 
     galaxyBranches: 6,
     galaxySpin: 0.09,
@@ -199,26 +206,14 @@ const SETTINGS = {
 
     galaxyFormationSpeed: 0.05,
 
-
-    /* CAMERA */
-
     cameraZoom: 55,
-
-
-    /* FLOATING */
 
     floatingStrength: 0.01,
     floatingSpeed: 0.00015,
 
-
-    /* METEORS */
-
     meteorCount: 12,
     meteorOpacity: 0.2,
     meteorSpeed: 1,
-
-
-    /* PAGE */
 
     galaxyScrollLength: 2
 
@@ -550,11 +545,17 @@ for(
 
 
 /* -------------------------------- */
-/* MOUSE */
+/* INPUT */
 /* -------------------------------- */
 
 const mouse =
     new THREE.Vector2(999,999);
+
+let isDragging = false;
+
+
+
+/* PC MOUSE */
 
 window.addEventListener(
     'mousemove',
@@ -572,22 +573,120 @@ window.addEventListener(
 
 
 
-    /* GALAXY INTERACTION */
+    /* ONLY DRAG ROTATES */
+
+    if(
+        isDragging &&
+        window.scrollY
+        > window.innerHeight
+    ){
+
+        targetRotationY =
+            mouse.x * 1.2;
+
+        targetRotationX =
+            mouse.y * 0.5;
+
+    }
+
+});
+
+
+
+/* MOBILE TOUCH */
+
+window.addEventListener(
+    'touchmove',
+    (e)=>{
+
+    const touch =
+        e.touches[0];
+
+    mouse.x =
+        (touch.clientX /
+        window.innerWidth)
+        * 2 - 1;
+
+    mouse.y =
+        -(touch.clientY /
+        window.innerHeight)
+        * 2 + 1;
+
+
+
+    if(
+        isDragging &&
+        window.scrollY
+        > window.innerHeight
+    ){
+
+        targetRotationY =
+            mouse.x * 1.2;
+
+        targetRotationX =
+            mouse.y * 0.5;
+
+    }
+
+},{passive:true});
+
+
+
+/* DRAG START */
+
+window.addEventListener(
+    'mousedown',
+    ()=>{
 
     if(
         window.scrollY
         > window.innerHeight
     ){
 
-        targetRotationY =
-            mouse.x * 0.8;
-
-        targetRotationX =
-            mouse.y * 0.3;
+        isDragging = true;
 
     }
 
 });
+
+
+
+window.addEventListener(
+    'mouseup',
+    ()=>{
+
+    isDragging = false;
+
+});
+
+
+
+/* TOUCH START */
+
+window.addEventListener(
+    'touchstart',
+    ()=>{
+
+    if(
+        window.scrollY
+        > window.innerHeight
+    ){
+
+        isDragging = true;
+
+    }
+
+},{passive:true});
+
+
+
+window.addEventListener(
+    'touchend',
+    ()=>{
+
+    isDragging = false;
+
+},{passive:true});
 
 
 
@@ -615,9 +714,7 @@ const intersectionPoint =
 
 let waves = [];
 
-window.addEventListener(
-    'click',
-    ()=>{
+function createWave(){
 
     if(window.scrollY
         > window.innerHeight)
@@ -646,7 +743,26 @@ window.addEventListener(
 
     });
 
-});
+}
+
+
+
+/* PC CLICK */
+
+window.addEventListener(
+    'click',
+    createWave
+);
+
+
+
+/* MOBILE TAP */
+
+window.addEventListener(
+    'touchstart',
+    createWave,
+    {passive:true}
+);
 
 
 
