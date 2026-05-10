@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Inkrid Cosmic Experience</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    background:black;
+    overflow-x:hidden;
+    height:650vh;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+}
+
+.section{
+    width:100%;
+    height:100vh;
+
+    position:relative;
+    z-index:5;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    pointer-events:none;
+}
+
+.title{
+    color:white;
+    font-size:5vw;
+    letter-spacing:12px;
+    opacity:0.85;
+}
+
+.subtitle{
+    position:absolute;
+    bottom:40px;
+
+    color:white;
+    opacity:0.45;
+
+    letter-spacing:3px;
+    font-size:12px;
+}
+
+.launchButton{
+
+    position:fixed;
+
+    bottom:60px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    padding:16px 32px;
+
+    border:1px solid rgba(255,255,255,0.3);
+
+    background:rgba(255,255,255,0.06);
+
+    color:white;
+
+    backdrop-filter:blur(10px);
+
+    letter-spacing:3px;
+    font-size:11px;
+
+    cursor:pointer;
+
+    opacity:0;
+    pointer-events:none;
+
+    transition:0.5s ease;
+
+    z-index:20;
+}
+
+.launchButton.show{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.launchButton:hover{
+    background:rgba(255,255,255,0.12);
+}
+
+</style>
+</head>
+
+<body>
+
+
+
+<!-- SECTION 1 -->
+
+<section class="section">
+
+    <div class="title">
+        INKRID
+    </div>
+
+    <div class="subtitle">
+        MOVE • CLICK • INTERACT
+    </div>
+
+</section>
+
+
+
+<!-- SECTION 2 -->
+
+<section class="section">
+
+    <div class="title">
+        GALAXY
+    </div>
+
+    <div class="subtitle">
+        KEEP SCROLLING
+    </div>
+
+</section>
+
+
+
+<button class="launchButton">
+    LAUNCH BACK
+</button>
+
+
+
+<script type="module">
+
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164/build/three.module.js';
+
+
+
+/* ========================================= */
+/* CONTROL PANEL */
+/* ========================================= */
+
+const SETTINGS = {
+
+    /* PARTICLES */
+
+    particleCount: 22000,
+    particleSize: 0.3,
+    particleOpacity: 0.95,
+    particleColor: 0xffffff,
+
+
+    /* BACKGROUND */
+
+    backgroundColor: 0x000000,
+
+
+    /* MOUSE */
+
+    mouseRadius: 5,
+    mouseForce: 1.2,
+
+
+    /* CLICK WAVES */
+
+    clickWaveForce: 1,
+    clickWaveSpeed: 1.5,
+
+
+    /* GALAXY */
+
+    galaxyBranches: 6,
+    galaxySpin: 0.09,
+    galaxyRadius: 180,
+
+    galaxyRotationY: 0.0008,
+    galaxyRotationZ: 0.00015,
+
+    galaxyFormationSpeed: 0.05,
+
+
+    /* CAMERA */
+
+    cameraZoom: 55,
+
+
+    /* FLOATING */
+
+    floatingStrength: 0.01,
+    floatingSpeed: 0.00015,
+
+
+    /* METEORS */
+
+    meteorCount: 12,
+    meteorOpacity: 0.2,
+    meteorSpeed: 1,
+
+
+    /* PAGE */
+
+    galaxyScrollLength: 2
+
+};
+
+
+
+/* -------------------------------- */
+/* SCENE */
+/* -------------------------------- */
+
+const scene = new THREE.Scene();
+
+scene.background =
+    new THREE.Color(
+        SETTINGS.backgroundColor
+    );
+
+
+
+/* -------------------------------- */
+/* CAMERA */
+/* -------------------------------- */
+
+const camera =
+    new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth /
+        window.innerHeight,
+        0.1,
+        3000
+    );
+
+camera.position.z = 120;
+
+
+
+/* -------------------------------- */
+/* RENDERER */
+/* -------------------------------- */
+
+const renderer =
+    new THREE.WebGLRenderer({
+        antialias:true
+    });
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+renderer.setPixelRatio(
+    window.devicePixelRatio
+);
+
+document.body.appendChild(
+    renderer.domElement
+);
+
+
+
+/* -------------------------------- */
+/* PARTICLES */
+/* -------------------------------- */
+
+const particleCount =
+    SETTINGS.particleCount;
+
+const geometry =
+    new THREE.BufferGeometry();
+
+const positions =
+    new Float32Array(
+        particleCount * 3
+    );
+
+const originalPositions =
+    new Float32Array(
+        particleCount * 3
+    );
+
+const galaxyPositions =
+    new Float32Array(
+        particleCount * 3
+    );
+
+
+
+/* -------------------------------- */
+/* RANDOM CLOUD */
+/* -------------------------------- */
+
+for(let i=0;i<particleCount;i++){
+
+    const i3 = i * 3;
+
+    const x =
+        (Math.random() - 0.5)
+        * 320;
+
+    const y =
+        (Math.random() - 0.5)
+        * 320;
+
+    const z =
+        (Math.random() - 0.5)
+        * 320;
+
+    positions[i3] = x;
+    positions[i3+1] = y;
+    positions[i3+2] = z;
+
+    originalPositions[i3] = x;
+    originalPositions[i3+1] = y;
+    originalPositions[i3+2] = z;
+}
+
+
+
+/* -------------------------------- */
+/* GALAXY TARGET */
+/* -------------------------------- */
+
+for(let i=0;i<particleCount;i++){
+
+    const i3 = i * 3;
+
+    const radius =
+        Math.random()
+        * SETTINGS.galaxyRadius;
+
+    const branches =
+        SETTINGS.galaxyBranches;
+
+    const branchAngle =
+        (i % branches)
+        * ((Math.PI * 2)
+        / branches);
+
+    const spinAngle =
+        radius
+        * SETTINGS.galaxySpin;
+
+    const angle =
+        branchAngle + spinAngle;
+
+    const randomness =
+        Math.pow(Math.random(),2)
+        * 25;
+
+    galaxyPositions[i3] =
+        Math.cos(angle)
+        * radius
+        + (Math.random()-0.5)
+        * randomness;
+
+    galaxyPositions[i3+1] =
+        (Math.random()-0.5)
+        * randomness * 0.2;
+
+    galaxyPositions[i3+2] =
+        Math.sin(angle)
+        * radius
+        + (Math.random()-0.5)
+        * randomness;
+
+}
+
+
+
+/* -------------------------------- */
+/* GEOMETRY */
+/* -------------------------------- */
+
+geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(
+        positions,
+        3
+    )
+);
+
+
+
+/* -------------------------------- */
+/* PARTICLE TEXTURE */
+/* -------------------------------- */
+
+const particleCanvas =
+    document.createElement('canvas');
+
+particleCanvas.width = 64;
+particleCanvas.height = 64;
+
+const pctx =
+    particleCanvas.getContext('2d');
+
+const gradient =
+    pctx.createRadialGradient(
+        32,32,0,
+        32,32,32
+    );
+
+gradient.addColorStop(0,'white');
+gradient.addColorStop(0.4,'white');
+gradient.addColorStop(1,'transparent');
+
+pctx.fillStyle = gradient;
+
+pctx.beginPath();
+pctx.arc(32,32,32,0,Math.PI*2);
+pctx.fill();
+
+const particleTexture =
+    new THREE.CanvasTexture(
+        particleCanvas
+    );
+
+
+
+/* -------------------------------- */
+/* MATERIAL */
+/* -------------------------------- */
+
+const material =
+    new THREE.PointsMaterial({
+
+    map:particleTexture,
+
+    transparent:true,
+
+    alphaTest:0.001,
+
+    depthWrite:false,
+
+    color: SETTINGS.particleColor,
+
+    size: SETTINGS.particleSize,
+
+    opacity: SETTINGS.particleOpacity
+
+});
+
+
+
+/* -------------------------------- */
+/* POINTS */
+/* -------------------------------- */
+
+const particles =
+    new THREE.Points(
+        geometry,
+        material
+    );
+
+scene.add(particles);
+
+
+
+/* -------------------------------- */
+/* METEORS */
+/* -------------------------------- */
+
+const meteors = [];
+
+function createMeteor(){
+
+    const meteorGeometry =
+        new THREE.BufferGeometry();
+
+    const trailLength = 30;
+
+    const trailPositions =
+        new Float32Array(
+            trailLength * 3
+        );
+
+    meteorGeometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(
+            trailPositions,
+            3
+        )
+    );
+
+    const meteorMaterial =
+        new THREE.LineBasicMaterial({
+
+            color:0xffffff,
+
+            transparent:true,
+
+            opacity:
+            SETTINGS.meteorOpacity
+
+        });
+
+    const meteor =
+        new THREE.Line(
+            meteorGeometry,
+            meteorMaterial
+        );
+
+    meteor.userData = {
+
+        x:(Math.random()-0.5)*500,
+        y:Math.random()*300,
+        z:(Math.random()-0.5)*200,
+
+        speed:
+            1 + Math.random()*2
+
+    };
+
+    scene.add(meteor);
+
+    meteors.push(meteor);
+
+}
+
+for(
+    let i = 0;
+    i < SETTINGS.meteorCount;
+    i++
+){
+    createMeteor();
+}
+
+
+
+/* -------------------------------- */
+/* MOUSE */
+/* -------------------------------- */
+
+const mouse =
+    new THREE.Vector2(999,999);
+
+window.addEventListener(
+    'mousemove',
+    (e)=>{
+
+    mouse.x =
+        (e.clientX /
+        window.innerWidth)
+        * 2 - 1;
+
+    mouse.y =
+        -(e.clientY /
+        window.innerHeight)
+        * 2 + 1;
+
+
+
+    /* GALAXY INTERACTION */
+
+    if(
+        window.scrollY
+        > window.innerHeight
+    ){
+
+        targetRotationY =
+            mouse.x * 0.8;
+
+        targetRotationX =
+            mouse.y * 0.3;
+
+    }
+
+});
+
+
+
+/* -------------------------------- */
+/* RAYCAST */
+/* -------------------------------- */
+
+const raycaster =
+    new THREE.Raycaster();
+
+const plane =
+    new THREE.Plane(
+        new THREE.Vector3(0,0,1),
+        0
+    );
+
+const intersectionPoint =
+    new THREE.Vector3();
+
+
+
+/* -------------------------------- */
+/* CLICK WAVE */
+/* -------------------------------- */
+
+let waves = [];
+
+window.addEventListener(
+    'click',
+    ()=>{
+
+    if(window.scrollY
+        > window.innerHeight)
+        return;
+
+    raycaster.setFromCamera(
+        mouse,
+        camera
+    );
+
+    const point =
+        new THREE.Vector3();
+
+    raycaster.ray.intersectPlane(
+        plane,
+        point
+    );
+
+    waves.push({
+
+        x:point.x,
+        y:point.y,
+
+        radius:0,
+        life:1
+
+    });
+
+});
+
+
+
+/* -------------------------------- */
+/* SCROLL */
+/* -------------------------------- */
+
+let galaxyProgress = 0;
+
+window.addEventListener(
+    'scroll',
+    ()=>{
+
+    const start =
+        window.innerHeight;
+
+    const totalGalaxyScroll =
+        window.innerHeight
+        * SETTINGS.galaxyScrollLength;
+
+    if(window.scrollY < start){
+
+        galaxyProgress = 0;
+
+    }else{
+
+        galaxyProgress =
+            (window.scrollY - start)
+            / totalGalaxyScroll;
+
+        galaxyProgress =
+            Math.min(
+                galaxyProgress,
+                1
+            );
+    }
+
+
+
+    if(galaxyProgress > 0.96){
+
+        document
+        .querySelector(
+            '.launchButton'
+        )
+        .classList.add('show');
+
+    }else{
+
+        document
+        .querySelector(
+            '.launchButton'
+        )
+        .classList.remove('show');
+
+    }
+
+});
+
+
+
+/* -------------------------------- */
+/* GALAXY INTERACTION */
+/* -------------------------------- */
+
+let targetRotationX = 0;
+let targetRotationY = 0;
+
+let currentRotationX = 0;
+let currentRotationY = 0;
+
+
+
+/* -------------------------------- */
+/* LAUNCH BACK */
+/* -------------------------------- */
+
+document
+.querySelector('.launchButton')
+.addEventListener(
+    'click',
+    ()=>{
+
+    window.scrollTo({
+
+        top:window.innerHeight,
+
+        behavior:'smooth'
+
+    });
+
+});
+
+
+
+/* -------------------------------- */
+/* ANIMATION */
+/* -------------------------------- */
+
+function animate(){
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+
+    raycaster.setFromCamera(
+        mouse,
+        camera
+    );
+
+    raycaster.ray.intersectPlane(
+        plane,
+        intersectionPoint
+    );
+
+
+
+    const pos =
+        geometry.attributes
+        .position.array;
+
+
+
+    /* WAVES */
+
+    waves.forEach((wave)=>{
+
+        wave.radius +=
+            SETTINGS.clickWaveSpeed;
+
+        wave.life *= 0.97;
+
+    });
+
+    waves =
+        waves.filter(
+            w => w.life > 0.02
+        );
+
+
+
+    for(let i=0;i<particleCount;i++){
+
+        const i3 = i * 3;
+
+
+
+        let px = pos[i3];
+        let py = pos[i3+1];
+        let pz = pos[i3+2];
+
+
+
+        const ox =
+            originalPositions[i3];
+
+        const oy =
+            originalPositions[i3+1];
+
+        const oz =
+            originalPositions[i3+2];
+
+
+
+        const gx =
+            galaxyPositions[i3];
+
+        const gy =
+            galaxyPositions[i3+1];
+
+        const gz =
+            galaxyPositions[i3+2];
+
+
+
+        /* SECTION 1 */
+
+        if(window.scrollY
+            < window.innerHeight){
+
+            const dx =
+                px -
+                intersectionPoint.x;
+
+            const dy =
+                py -
+                intersectionPoint.y;
+
+            const distance =
+                Math.sqrt(
+                    dx*dx + dy*dy
+                );
+
+            const maxDistance =
+                SETTINGS.mouseRadius;
+
+
+
+            if(distance < maxDistance){
+
+                const force =
+                    (maxDistance
+                    - distance)
+                    / maxDistance;
+
+                const angle =
+                    Math.atan2(dy,dx);
+
+                px +=
+                    Math.cos(angle)
+                    * force
+                    * SETTINGS.mouseForce;
+
+                py +=
+                    Math.sin(angle)
+                    * force
+                    * SETTINGS.mouseForce;
+
+            }
+
+
+
+            /* SOFT CLICK WAVE */
+
+            waves.forEach((wave)=>{
+
+                const dx =
+                    px - wave.x;
+
+                const dy =
+                    py - wave.y;
+
+                const dist =
+                    Math.sqrt(
+                        dx*dx + dy*dy
+                    );
+
+                if(
+                    Math.abs(
+                        dist - wave.radius
+                    ) < 12
+                ){
+
+                    const angle =
+                        Math.atan2(dy,dx);
+
+                    const power =
+                        wave.life
+                        * SETTINGS.clickWaveForce;
+
+                    px +=
+                        Math.cos(angle)
+                        * power;
+
+                    py +=
+                        Math.sin(angle)
+                        * power;
+
+                }
+
+            });
+
+
+
+            px +=
+                (ox - px) * 0.02;
+
+            py +=
+                (oy - py) * 0.02;
+
+            pz +=
+                (oz - pz) * 0.02;
+
+        }
+
+
+
+        /* GALAXY */
+
+        else{
+
+            const tx =
+                ox + (gx - ox)
+                * galaxyProgress;
+
+            const ty =
+                oy + (gy - oy)
+                * galaxyProgress;
+
+            const tz =
+                oz + (gz - oz)
+                * galaxyProgress;
+
+
+
+            px +=
+                (tx - px)
+                * SETTINGS.galaxyFormationSpeed;
+
+            py +=
+                (ty - py)
+                * SETTINGS.galaxyFormationSpeed;
+
+            pz +=
+                (tz - pz)
+                * SETTINGS.galaxyFormationSpeed;
+
+        }
+
+
+
+        /* FLOAT */
+
+        px +=
+            Math.sin(
+                Date.now()
+                * SETTINGS.floatingSpeed
+                + oy
+            )
+            * SETTINGS.floatingStrength;
+
+        py +=
+            Math.cos(
+                Date.now()
+                * SETTINGS.floatingSpeed
+                + ox
+            )
+            * SETTINGS.floatingStrength;
+
+
+
+        pos[i3] = px;
+        pos[i3+1] = py;
+        pos[i3+2] = pz;
+
+    }
+
+
+
+    geometry.attributes
+    .position.needsUpdate = true;
+
+
+
+    /* GALAXY ROTATION */
+
+    if(
+        window.scrollY
+        > window.innerHeight
+    ){
+
+        currentRotationY +=
+            (
+                targetRotationY
+                - currentRotationY
+            ) * 0.03;
+
+        currentRotationX +=
+            (
+                targetRotationX
+                - currentRotationX
+            ) * 0.03;
+
+
+
+        particles.rotation.y +=
+            SETTINGS.galaxyRotationY;
+
+        particles.rotation.z +=
+            SETTINGS.galaxyRotationZ;
+
+
+
+        particles.rotation.y +=
+            currentRotationY
+            * 0.01;
+
+        particles.rotation.x +=
+            currentRotationX
+            * 0.01;
+
+    }
+
+
+
+    /* CAMERA */
+
+    camera.position.z =
+        120
+        - (
+            galaxyProgress
+            * SETTINGS.cameraZoom
+        );
+
+
+
+    /* METEORS */
+
+    meteors.forEach((meteor)=>{
+
+        meteor.userData.x -=
+
+            meteor.userData.speed
+            * SETTINGS.meteorSpeed;
+
+        meteor.userData.y -=
+            meteor.userData.speed;
+
+        if(meteor.userData.x < -300){
+
+            meteor.userData.x =
+                300;
+
+            meteor.userData.y =
+                Math.random()*300;
+
+        }
+
+        const arr =
+            meteor.geometry
+            .attributes
+            .position.array;
+
+        for(let i=0;i<30;i++){
+
+            arr[i*3] =
+                meteor.userData.x
+                + i * 2;
+
+            arr[i*3+1] =
+                meteor.userData.y
+                + i;
+
+            arr[i*3+2] =
+                meteor.userData.z;
+
+        }
+
+        meteor.geometry
+        .attributes.position
+        .needsUpdate = true;
+
+    });
+
+
+
+    renderer.render(
+        scene,
+        camera
+    );
+
+}
+
+animate();
+
+
+
+/* -------------------------------- */
+/* RESIZE */
+/* -------------------------------- */
+
+window.addEventListener(
+    'resize',
+    ()=>{
+
+    camera.aspect =
+        window.innerWidth
+        / window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+
+});
+
+</script>
+
+</body>
+</html>
